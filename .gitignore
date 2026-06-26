@@ -1,0 +1,7 @@
+node_modules/
+dist/
+*.log
+
+# Machine-specific MCP registration (absolute paths); regenerate with:
+# claude mcp add tokensmith -s project -- node "$(pwd)/dist/index.js"
+.mcp.json

@@ -2,7 +2,7 @@
 
 > Make coding agents **design-system-aware**. An MCP server that gives any agent (Claude Code, Claude Desktop, Cursor) first-class access to a design system's tokens, so generated UI comes out on-system and token-correct the first time.
 
-**Status:** `v0.0` — M0 ✅ (skeleton + stdio pipe proven via raw JSON-RPC handshake) · M1 ✅ (DTCG loader) · M2 ✅ (alias resolver) · next **M3** (wire the MCP tools). Private until v0.1. This README is the **build spec**: an agent should be able to bring the current milestone to "done" from this file alone.
+**Status:** `v0.0` — M0 ✅ · M1 ✅ (DTCG loader) · M2 ✅ (alias resolver) · M3 ✅ (`list_tokens` + `resolve_token` live) · next **M4** (connect in a real Claude client + demo = v0.0 done). Private until v0.1. This README is the **build spec**: an agent should be able to bring the current milestone to "done" from this file alone.
 
 ---
 
@@ -21,9 +21,19 @@
 - Scope note: whole-`$value` aliases only; embedded references inside composite values are v0.1+.
 - Tests: 34 across loader + resolver.
 
-## M3 — next: wire `list_tokens` + `resolve_token` MCP tools
+## M3 ✅ — the MCP tools (`src/index.ts`)
 
-Replace `ping` as the story: `list_tokens(group?)` → resolved token listing (path, type, value, isAlias) optionally filtered by group prefix; `resolve_token(name)` → value + type + the alias chain (the demo moment). Server loads the token file at startup — `TOKENS_PATH` env var or CLI arg, default `examples/tokens.json` — and fails loud on a bad file. Errors from the resolver surface as MCP tool errors with their messages intact. `ping` stays.
+- **`list_tokens(group?)`** → resolved listing `{path, type, value, aliasOf?, description?}`, optionally filtered by group prefix (`"color.action"`). Empty filter result = tool error with a pointer, not a silent `[]`.
+- **`resolve_token(name)`** → `{path, value, type, chain, isAlias, description}` — the chain is the demo moment (`color.action.primary → color.brand.primary → color.base.blue-600`).
+- Token file: `argv[2]` or `TOKENS_PATH`, defaulting to the bundled Meridian example. Bad file = loud stderr + exit 1, never half-serve.
+- Resolver/parse failures surface as MCP tool errors (`isError: true`) with messages intact — including the "did you mean" hints.
+- Proven over a raw JSON-RPC stdio session: `tools/list` shows all 3 tools; happy paths + error path verified. `ping` stays.
+
+## M4 — next: connect in a real Claude client + the demo (= v0.0 done)
+
+1. `claude mcp add tokensmith -s project -- node <abs>/dist/index.js` (or Claude Desktop config), restart, confirm all 3 tools listed.
+2. The demo: ask Claude to build a small component **without** tokensmith (watch it guess hex values), then **with** it ("use the design system over MCP") — capture the contrast: token-correct `color.action.primary` usage, on-scale spacing.
+3. That contrast clip/screenshots = the v0.1 public-flip material (GitHub mirror + LinkedIn).
 
 ---
 

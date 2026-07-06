@@ -1,98 +1,138 @@
 # tokensmith
 
-> Make coding agents **design-system-aware**. An MCP server that gives any agent (Claude Code, Claude Desktop, Cursor) first-class access to a design system's tokens, so generated UI comes out on-system and token-correct the first time.
+**Make coding agents design-system-aware.** An MCP server that gives any agent
+(Claude Code, Claude Desktop, Cursor) first-class access to a design system's
+tokens — so the UI it generates comes out *on-system* and token-correct the first
+time, instead of a pile of guessed hex values.
 
-**Status:** `v0.0` — M0 ✅ · M1 ✅ (DTCG loader) · M2 ✅ (alias resolver) · M3 ✅ (`list_tokens` + `resolve_token` live) · next **M4** (connect in a real Claude client + demo = v0.0 done). Private until v0.1. This README is the **build spec**: an agent should be able to bring the current milestone to "done" from this file alone.
-
----
-
-## M1 ✅ — DTCG loader (`src/dtcg/`)
-
-- `types.ts` — DTCG model: `FlatToken` (dot-path, `$type` own-or-inherited, raw `$value`, alias detection), `TokenSet`, path-annotated `TokenParseError`, `ALIAS_RE`.
-- `loader.ts` — `loadTokensFile(path)` / `parseTokens(doc)`: walks groups (`$value` ⇒ token, else group), inherits `$type` downward, flattens to `Map<path, FlatToken>`. **Detects aliases, does not resolve them** — resolution incl. chains + cycle guard is M2's tested core. Fails loud with the offending path.
-- `examples/tokens.json` — "Meridian", an invented clean-room demo system: 62 tokens, 21 aliases, chains up to 3 deep (`color.action.primary → color.brand.primary → color.base.blue-600`) so resolution demos show something real. **Modes (light/dark) deliberately deferred past v0.0.**
-- Tests: `npm test` (vitest) — 15 cases across the example system + error paths.
-
-## M2 ✅ — alias resolver (`src/dtcg/resolver.ts`)
-
-- `resolveToken(set, path)` → `Resolution { path, value, type, chain, description }` — terminal value + the full walk (`chain.length === 1` ⇒ literal). Typeless aliases adopt the first defined `$type` along the chain; an alias's own type wins.
-- `resolveAll(set)` — every token, document order; what M3's `list_tokens` serves.
-- Failures are `TokenResolveError` with the walked chain in the message: unknown path (with a nearest-miss "did you mean" hint on case slips / unique leaves), broken reference, and cycles (visited-set guard; self-reference, 2-node, and entered-mid-chain loops all covered).
-- Scope note: whole-`$value` aliases only; embedded references inside composite values are v0.1+.
-- Tests: 34 across loader + resolver.
-
-## M3 ✅ — the MCP tools (`src/index.ts`)
-
-- **`list_tokens(group?)`** → resolved listing `{path, type, value, aliasOf?, description?}`, optionally filtered by group prefix (`"color.action"`). Empty filter result = tool error with a pointer, not a silent `[]`.
-- **`resolve_token(name)`** → `{path, value, type, chain, isAlias, description}` — the chain is the demo moment (`color.action.primary → color.brand.primary → color.base.blue-600`).
-- Token file: `argv[2]` or `TOKENS_PATH`, defaulting to the bundled Meridian example. Bad file = loud stderr + exit 1, never half-serve.
-- Resolver/parse failures surface as MCP tool errors (`isError: true`) with messages intact — including the "did you mean" hints.
-- Proven over a raw JSON-RPC stdio session: `tools/list` shows all 3 tools; happy paths + error path verified. `ping` stays.
-
-## M4 — next: connect in a real Claude client + the demo (= v0.0 done)
-
-1. `claude mcp add tokensmith -s project -- node <abs>/dist/index.js` (or Claude Desktop config), restart, confirm all 3 tools listed.
-2. The demo: ask Claude to build a small component **without** tokensmith (watch it guess hex values), then **with** it ("use the design system over MCP") — capture the contrast: token-correct `color.action.primary` usage, on-scale spacing.
-3. That contrast clip/screenshots = the v0.1 public-flip material (GitHub mirror + LinkedIn).
+An agent writing UI today has no idea your design system exists. It reaches for
+`#2563eb` because that's the blue it remembers. tokensmith is the bridge: expose a
+design system (W3C [Design Tokens / DTCG](https://tr.designtokens.org/) `tokens.json`)
+over MCP so the agent *queries* the system — resolving `color.action.primary` to the
+real value, following alias chains — instead of inventing one.
 
 ---
 
-## Why it exists
-Today an agent writing UI guesses at color, spacing, and type — it has no idea your design system exists. tokensmith is the bridge: expose a design system (W3C Design Tokens / DTCG `tokens.json`) over MCP so agents *query* the system instead of guessing. Full vision (read / resolve / generate-with-system / audit / round-trip-to-Figma) lives in the spec; **M0 proves only the pipe.**
+## The 30-second demo
+
+The [`demo/`](./demo/) directory builds one component, `SettingsCard`, twice:
+
+- [`without.tsx`](./demo/without.tsx) — no design system in context. The model guesses
+  every value from generic Tailwind muscle memory.
+- [`with.tsx`](./demo/with.tsx) — *"use the design system via the tokensmith tools."*
+  Every literal is resolved live through the MCP server, each one citing its token path.
+
+Same prompt, same layout. The only difference is whether the agent could **read** the
+design system. The result:
+
+| Role | Token path | Guessed | Token-correct |
+|---|---|---|---|
+| Primary action bg | `color.action.primary` | `#2563eb` | `#2557c7` |
+| Card surface | `color.surface.raised` | `#ffffff` | `#f7f8fa` |
+| Card radius | `radius.lg` | `12px` | `16px` |
+| Muted text | `color.text.muted` | `#6b7280` | `#5b6472` |
+| Font family | `type.family.sans` | `-apple-system` | `Inter` |
+| … | | **15 / 15 guessed wrong** | |
+
+Not one Tailwind default landed on a Meridian token. `#2563eb` vs `#2557c7` renders as
+"blue," passes visual review, and ships — that is exactly the drift a token system
+exists to prevent, and exactly the drift an LLM reintroduces the moment it can't read
+the tokens. Full breakdown + the alias chains in [`demo/README.md`](./demo/README.md).
 
 ---
 
-## M0 — the only goal of this milestone
-Stand up a **stdio MCP server** named `tokensmith` that exposes exactly one trivial tool, `ping`, and verify a real Claude client can call it. No token logic yet — M0 de-risks the one true unknown (does a client discover and talk to this process over stdio).
+## Quickstart
 
-### Build it
-1. Node 20+, TypeScript, ESM (`"type": "module"`).
-2. Deps: `@modelcontextprotocol/sdk`, `zod`. Dev: `typescript`, `tsx`.
-3. Lay out:
-   ```
-   src/index.ts        # the server: register `ping`, wire stdio, connect
-   tsconfig.json       # nodenext module resolution, outDir dist/
-   package.json        # "build": "tsc", bin -> dist/index.js
-   ```
-4. `npm run build` → `dist/index.js`.
+Requires Node 20+.
 
-### `ping` contract
-- name: `ping`, description: "Health check", no input.
-- returns text content `"pong"`.
-
-### Reference server shape
-> ⚠️ **Verify against the installed SDK version** — the `@modelcontextprotocol/sdk` API has shifted across releases. Check the installed package's actual exports before trusting this snippet; adapt method/import names as needed.
-```ts
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-
-const server = new McpServer({ name: "tokensmith", version: "0.0.0" });
-
-server.registerTool(
-  "ping",
-  { title: "Ping", description: "Health check", inputSchema: {} },
-  async () => ({ content: [{ type: "text", text: "pong" }] })
-);
-
-await server.connect(new StdioServerTransport());
+```bash
+git clone https://github.com/jtmchorse/tokensmith
+cd tokensmith
+npm install
+npm run build
 ```
 
-### 🚨 The one rule that breaks everything
-On a stdio MCP server, **stdout IS the JSON-RPC channel**. A single `console.log` to stdout corrupts the stream and the client silently fails to connect. **All logging goes to stderr** (`console.error`). If it "won't connect for no reason," this is suspect #1.
+Point it at your own DTCG token file, or use the bundled `Meridian` example:
+
+```bash
+# Claude Code — project scope, bundled example tokens
+claude mcp add tokensmith -s project -- node "$(pwd)/dist/index.js"
+
+# …or with your own tokens.json
+claude mcp add tokensmith -s project -- node "$(pwd)/dist/index.js" /abs/path/tokens.json
+```
+
+Claude Desktop (`claude_desktop_config.json`, then fully quit + reopen):
+
+```json
+{ "mcpServers": { "tokensmith": { "command": "node", "args": ["/abs/path/dist/index.js"] } } }
+```
+
+The token file resolves from `argv[2]`, then `TOKENS_PATH`, then the bundled
+[`examples/tokens.json`](./examples/tokens.json).
 
 ---
 
-## Verify (the ladder — fastest first)
-1. **Starts:** `node dist/index.js` runs and *hangs* (correct — waiting on stdio, not exiting).
-2. **MCP Inspector:** `npx @modelcontextprotocol/inspector node dist/index.js` → open the local URL → call `ping` → `pong`. This is the dev loop.
-3. **Claude Code:** `claude mcp add tokensmith -s project -- node <abs>/dist/index.js`, restart, confirm `ping` is listed and returns `pong`.
-4. **Claude Desktop:** add to `~/Library/Application Support/Claude/claude_desktop_config.json`, then **fully quit and reopen** Desktop:
-   ```json
-   { "mcpServers": { "tokensmith": { "command": "node", "args": ["<abs>/dist/index.js"] } } }
-   ```
+## Tools
 
-## M0 done-bar
-`pong` returns on the Inspector **and** at least one real Claude client. Commit + push. Then M1 (DTCG loader) begins.
+| Tool | What it does |
+|---|---|
+| **`list_tokens(group?)`** | Resolved listing `{path, type, value, aliasOf?, description?}`, optionally filtered by a group prefix like `"color.action"`. |
+| **`resolve_token(name)`** | Resolves one token to `{path, value, type, chain, isAlias, description}`. The `chain` is the whole point — it shows the full alias walk. |
+| **`ping`** | Health check → `pong`. |
 
-## Explicitly OUT of scope for M0
-No token parsing, no `tokens.json`, no `list_tokens`/`resolve_token`, no Figma. Just the pipe.
+`resolve_token` follows alias chains to their terminal value and hands back the path it
+walked:
+
+```
+resolve_token  color.action.primary
+  → { value: "#2557c7",
+      chain: ["color.action.primary", "color.brand.primary", "color.base.blue-600"] }
+```
+
+That indirection is the value: a designer repoints `brand.primary` once, and every
+consumer that asked for `action.primary` moves with it. A guessed hex is frozen at
+whatever the model remembered.
+
+---
+
+## How it works
+
+- **DTCG loader** (`src/dtcg/`) — walks a W3C `tokens.json`, inherits `$type` down
+  through groups, flattens to a `Map<dot.path, token>`, and detects aliases. Fails loud
+  with the offending path.
+- **Alias resolver** (`src/dtcg/resolver.ts`) — resolves whole-`$value` aliases through
+  chains of arbitrary depth with a visited-set **cycle guard** (self-reference, 2-node,
+  and mid-chain loops all caught). Unknown paths get a nearest-miss *"did you mean"* hint.
+- **MCP server** (`src/index.ts`) — registers the three tools over stdio; resolver and
+  parse failures surface as MCP tool errors with the message (and hints) intact.
+- **Tested core** — `npm test` (vitest), 34 cases across loader + resolver, including
+  every error path.
+
+The `Meridian` example is an invented, clean-room design system: 62 tokens, 21 aliases,
+chains up to 3 deep, built so resolution demos show something real. Modes (light/dark)
+and composite-value references are deferred past v0.0.
+
+---
+
+## Status & roadmap
+
+**`v0.0`** — walking skeleton, working end-to-end:
+
+- ✅ **M0** stdio MCP pipe · ✅ **M1** DTCG loader · ✅ **M2** alias resolver + cycle guard
+- ✅ **M3** `list_tokens` + `resolve_token` · ✅ **M4** live in a Claude client + the demo
+
+**Next (`v0.1`+):** design-system-aware *generation* (not just lookup), token **audit** of
+existing code, light/dark modes, composite-value references, and round-trip to Figma.
+
+---
+
+## Notes for contributors
+
+On a stdio MCP server, **stdout is the JSON-RPC channel.** A single stray `console.log`
+to stdout corrupts the stream and the client silently fails to connect. All logging goes
+to stderr. If it "won't connect for no reason," that is suspect #1.
+
+## License
+
+MIT

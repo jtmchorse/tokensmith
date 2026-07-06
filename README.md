@@ -2,7 +2,7 @@
 
 > Make coding agents **design-system-aware**. An MCP server that gives any agent (Claude Code, Claude Desktop, Cursor) first-class access to a design system's tokens, so generated UI comes out on-system and token-correct the first time.
 
-**Status:** `v0.0` — M0 ✅ (skeleton + stdio pipe proven via raw JSON-RPC handshake) · M1 ✅ (DTCG loader) · next **M2** (alias resolver). Private until v0.1. This README is the **build spec**: an agent should be able to bring the current milestone to "done" from this file alone.
+**Status:** `v0.0` — M0 ✅ (skeleton + stdio pipe proven via raw JSON-RPC handshake) · M1 ✅ (DTCG loader) · M2 ✅ (alias resolver) · next **M3** (wire the MCP tools). Private until v0.1. This README is the **build spec**: an agent should be able to bring the current milestone to "done" from this file alone.
 
 ---
 
@@ -13,9 +13,17 @@
 - `examples/tokens.json` — "Meridian", an invented clean-room demo system: 62 tokens, 21 aliases, chains up to 3 deep (`color.action.primary → color.brand.primary → color.base.blue-600`) so resolution demos show something real. **Modes (light/dark) deliberately deferred past v0.0.**
 - Tests: `npm test` (vitest) — 15 cases across the example system + error paths.
 
-## M2 — next: alias resolver + cycle guard
+## M2 ✅ — alias resolver (`src/dtcg/resolver.ts`)
 
-`resolve(set, path)` → computed value + the full alias chain; typeless aliases take their target's `$type`; broken references and cycles fail with the chain in the message. Unit tests are the point of this milestone — the resolver is the core the MCP tools (M3) trust.
+- `resolveToken(set, path)` → `Resolution { path, value, type, chain, description }` — terminal value + the full walk (`chain.length === 1` ⇒ literal). Typeless aliases adopt the first defined `$type` along the chain; an alias's own type wins.
+- `resolveAll(set)` — every token, document order; what M3's `list_tokens` serves.
+- Failures are `TokenResolveError` with the walked chain in the message: unknown path (with a nearest-miss "did you mean" hint on case slips / unique leaves), broken reference, and cycles (visited-set guard; self-reference, 2-node, and entered-mid-chain loops all covered).
+- Scope note: whole-`$value` aliases only; embedded references inside composite values are v0.1+.
+- Tests: 34 across loader + resolver.
+
+## M3 — next: wire `list_tokens` + `resolve_token` MCP tools
+
+Replace `ping` as the story: `list_tokens(group?)` → resolved token listing (path, type, value, isAlias) optionally filtered by group prefix; `resolve_token(name)` → value + type + the alias chain (the demo moment). Server loads the token file at startup — `TOKENS_PATH` env var or CLI arg, default `examples/tokens.json` — and fails loud on a bad file. Errors from the resolver surface as MCP tool errors with their messages intact. `ping` stays.
 
 ---
 

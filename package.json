@@ -12,7 +12,8 @@
   ],
   "scripts": {
     "build": "tsc",
-    "dev": "tsx src/index.ts"
+    "dev": "tsx src/index.ts",
+    "test": "vitest run"
   },
   "engines": {
     "node": ">=20"
@@ -22,7 +23,9 @@
     "zod": "^3.23.0"
   },
   "devDependencies": {
+    "@types/node": "^20.19.43",
     "tsx": "^4.0.0",
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "vitest": "^3.2.7"
   }
 }

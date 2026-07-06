@@ -2,7 +2,20 @@
 
 > Make coding agents **design-system-aware**. An MCP server that gives any agent (Claude Code, Claude Desktop, Cursor) first-class access to a design system's tokens, so generated UI comes out on-system and token-correct the first time.
 
-**Status:** `v0.0` — M0 walking skeleton. Private until v0.1. This README is the **build spec**: an agent should be able to bring M0 to "done" from this file alone.
+**Status:** `v0.0` — M0 ✅ (skeleton + stdio pipe proven via raw JSON-RPC handshake) · M1 ✅ (DTCG loader) · next **M2** (alias resolver). Private until v0.1. This README is the **build spec**: an agent should be able to bring the current milestone to "done" from this file alone.
+
+---
+
+## M1 ✅ — DTCG loader (`src/dtcg/`)
+
+- `types.ts` — DTCG model: `FlatToken` (dot-path, `$type` own-or-inherited, raw `$value`, alias detection), `TokenSet`, path-annotated `TokenParseError`, `ALIAS_RE`.
+- `loader.ts` — `loadTokensFile(path)` / `parseTokens(doc)`: walks groups (`$value` ⇒ token, else group), inherits `$type` downward, flattens to `Map<path, FlatToken>`. **Detects aliases, does not resolve them** — resolution incl. chains + cycle guard is M2's tested core. Fails loud with the offending path.
+- `examples/tokens.json` — "Meridian", an invented clean-room demo system: 62 tokens, 21 aliases, chains up to 3 deep (`color.action.primary → color.brand.primary → color.base.blue-600`) so resolution demos show something real. **Modes (light/dark) deliberately deferred past v0.0.**
+- Tests: `npm test` (vitest) — 15 cases across the example system + error paths.
+
+## M2 — next: alias resolver + cycle guard
+
+`resolve(set, path)` → computed value + the full alias chain; typeless aliases take their target's `$type`; broken references and cycles fail with the chain in the message. Unit tests are the point of this milestone — the resolver is the core the MCP tools (M3) trust.
 
 ---
 

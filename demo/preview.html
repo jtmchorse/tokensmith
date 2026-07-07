@@ -1,0 +1,87 @@
+<!doctype html>
+<!--
+  tokensmith demo — static side-by-side preview (no build step).
+  Faithful HTML/CSS translation of demo/without.tsx and demo/with.tsx so the
+  two SettingsCard variants can be eyeballed by opening this file in any browser.
+  Values are hand-copied from the two components; the .tsx files remain source of truth.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>tokensmith demo — guessed vs token-correct</title>
+  <style>
+    body {
+      margin: 0;
+      background: #e9ebee;
+      font-family: Inter, system-ui, sans-serif;
+      color: #161a21;
+    }
+    .wrap { max-width: 1000px; margin: 0 auto; padding: 40px 24px 56px; }
+    h1 { font-size: 24px; font-weight: 700; margin: 0 0 6px; }
+    .sub { font-size: 15px; color: #5b6472; margin: 0 0 32px; max-width: 640px; }
+    .cols { display: flex; gap: 32px; flex-wrap: wrap; align-items: flex-start; }
+    .col { flex: 1 1 380px; }
+    .col > .tag {
+      display: inline-block; font-size: 12px; font-weight: 600; letter-spacing: .02em;
+      text-transform: uppercase; margin-bottom: 12px; padding: 3px 10px; border-radius: 9999px;
+    }
+    .tag.guess { background: #fdecee; color: #c92c3d; }
+    .tag.token { background: #e4ecfb; color: #1a419c; }
+    .note { font-size: 13px; color: #5b6472; margin-top: 14px; line-height: 1.5; }
+    code { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Same card. One reads the design system, one guesses.</h1>
+    <p class="sub">
+      Both cards were generated from the same prompt for the "Meridian" app. The left one
+      had no design system in context; the right one resolved every value through the
+      tokensmith MCP tools. 15 of 15 values differ.
+    </p>
+
+    <div class="cols">
+      <!-- ============ WITHOUT ============ -->
+      <div class="col">
+        <span class="tag guess">Without tokensmith — guessed</span>
+        <div style="background:#ffffff; border:1px solid #e5e7eb; border-radius:12px; padding:24px; max-width:420px; font-family:-apple-system, system-ui, sans-serif;">
+          <h2 style="margin:0; font-size:18px; font-weight:600; color:#111827;">Account</h2>
+          <p style="margin:6px 0 0; font-size:14px; color:#6b7280;">Manage the email and security settings for your Meridian account.</p>
+          <hr style="border:0; border-top:1px solid #e5e7eb; margin:20px 0;" />
+          <label style="display:block; font-size:13px; font-weight:500; color:#374151; margin-bottom:6px;">Email</label>
+          <input value="jt@meridian.app" style="width:100%; box-sizing:border-box; padding:10px 12px; font-size:14px; border:1px solid #d1d5db; border-radius:6px; color:#111827;" />
+          <div style="display:flex; gap:12px; margin-top:24px; align-items:center;">
+            <button style="background:#2563eb; color:#ffffff; border:0; border-radius:6px; padding:10px 16px; font-size:14px; font-weight:600; cursor:pointer;">Save changes</button>
+            <a href="#" style="color:#ef4444; font-size:14px; font-weight:500; text-decoration:none;">Delete account</a>
+          </div>
+        </div>
+        <p class="note">
+          <code>#2563eb</code> button, <code>12px</code> radius, <code>#6b7280</code> text,
+          <code>-apple-system</code> font — all plausible, all wrong for Meridian.
+        </p>
+      </div>
+
+      <!-- ============ WITH ============ -->
+      <div class="col">
+        <span class="tag token">With tokensmith — token-correct</span>
+        <div style="background:#f7f8fa; border:1px solid #c6ccd4; border-radius:16px; padding:16px; max-width:420px; font-family:Inter, system-ui, sans-serif;">
+          <h2 style="margin:0; font-size:20px; font-weight:700; color:#161a21;">Account</h2>
+          <p style="margin:4px 0 0; font-size:14px; font-weight:400; color:#5b6472;">Manage the email and security settings for your Meridian account.</p>
+          <hr style="border:0; border-top:1px solid #c6ccd4; margin:16px 0;" />
+          <label style="display:block; font-size:12px; font-weight:500; color:#5b6472; margin-bottom:4px;">Email</label>
+          <input value="jt@meridian.app" style="width:100%; box-sizing:border-box; padding:8px; font-size:14px; border:1px solid #c6ccd4; border-radius:8px; color:#161a21;" />
+          <div style="display:flex; gap:12px; margin-top:24px; align-items:center;">
+            <button style="background:#2557c7; color:#ffffff; border:0; border-radius:8px; padding:8px 16px; font-size:14px; font-weight:500; cursor:pointer;">Save changes</button>
+            <a href="#" style="color:#c92c3d; font-size:14px; font-weight:500; text-decoration:none;">Delete account</a>
+          </div>
+        </div>
+        <p class="note">
+          <code>color.action.primary</code> → <code>#2557c7</code>, <code>radius.lg</code> → <code>16px</code>,
+          <code>color.text.muted</code> → <code>#5b6472</code>, <code>type.family.sans</code> → Inter.
+        </p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

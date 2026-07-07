@@ -15,6 +15,10 @@ real value, following alias chains — instead of inventing one.
 
 ## The 30-second demo
 
+![Two SettingsCard components side by side — a guessed version and a token-correct version generated from the same prompt](./demo/preview.png)
+
+*Same prompt, same layout. Left: no design system in context. Right: values resolved through tokensmith. The drift is subtle on purpose — that's exactly why it ships unnoticed. Open [`demo/preview.html`](./demo/preview.html) to view it live.*
+
 The [`demo/`](./demo/) directory builds one component, `SettingsCard`, twice:
 
 - [`without.tsx`](./demo/without.tsx) — no design system in context. The model guesses

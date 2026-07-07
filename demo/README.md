@@ -8,6 +8,8 @@ This directory contains one component, `SettingsCard`, built **twice**:
   tokensmith tools."* Every literal is resolved live through
   `mcp__tokensmith__resolve_token` / `list_tokens` against the **Meridian** token set,
   and each value cites the token path that produced it.
+- [`preview.html`](./preview.html) — a zero-dependency static render of both cards
+  side by side (`preview.png` is a screenshot of it). Open it in any browser; no build.
 
 Same prompt structure, same layout. The only difference is whether the model could
 **read the design system** instead of inventing it.

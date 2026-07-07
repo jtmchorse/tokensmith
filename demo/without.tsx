@@ -1,15 +1,14 @@
 /**
- * SettingsCard — WITHOUT tokensmith
+ * SettingsCard — WITHOUT tokensmith  (illustrative)
  *
- * Prompt given to the model:
- *   "Build a React settings card for the 'Meridian' app: a raised card with a
- *    title, a muted description, a divider, an email row, a primary 'Save
- *    changes' button, and a destructive 'Delete account' link."
+ * Hand-authored to show the values an agent — or a developer working from
+ * memory — reaches for when the design system ISN'T in context: generic
+ * Tailwind defaults. This is a worked example of the common failure mode, NOT a
+ * captured transcript of a specific model run.
  *
- * No design system was provided. Every color, size, radius, and spacing value
- * below is a GUESS — reasonable-looking defaults pulled from Tailwind muscle
- * memory. They are internally plausible but do not match Meridian's tokens.
- * See ../demo/README.md for the guessed-vs-token contrast.
+ * Same component and layout as with.tsx; every value here is a plausible guess
+ * (tagged "// GUESS") that does not match Meridian's tokens. The point is the
+ * contrast in ../demo/README.md: what gets guessed vs. what the tokens actually say.
  */
 import React from "react";
 

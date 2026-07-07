@@ -11,14 +11,15 @@ This directory contains one component, `SettingsCard`, built **twice**:
 - [`preview.html`](./preview.html) — a zero-dependency static render of both cards
   side by side (`preview.png` is a screenshot of it). Open it in any browser; no build.
 
-Same prompt structure, same layout. The only difference is whether the model could
-**read the design system** instead of inventing it.
+Same component, same layout. It contrasts the values that get **guessed** when the
+design system isn't in context against the values tokensmith **resolves** from the
+tokens. (The `without` file is a hand-authored illustration of the common Tailwind-default
+guesses, not a captured model run; the `with` values are real tool output.)
 
 ## The contrast
 
-Every guessed value below is plausible in isolation — and wrong for Meridian. A
-human reviewer would have to catch each one by hand in PR. With tokensmith the model
-resolves the real value (following alias chains up to 3 deep) and never guesses.
+One row per distinct token the card uses. Every guessed value is plausible in isolation
+— and wrong for Meridian. A human reviewer would have to catch each one by hand in PR.
 
 | Role | Token path | Guessed (`without`) | Token-correct (`with`) | Match? |
 |---|---|---|---|---|
@@ -26,20 +27,27 @@ resolves the real value (following alias chains up to 3 deep) and never guesses.
 | Card border | `color.border.default` | `#e5e7eb` | `#c6ccd4` | ✗ |
 | Card radius | `radius.lg` | `12px` | `16px` | ✗ |
 | Card padding | `space.inset.card` | `24px` | `16px` | ✗ |
-| Font family | `type.family.sans` | `-apple-system, system-ui` | `Inter, system-ui` | ✗ |
+| Font family † | `type.family.sans` | `-apple-system, system-ui` | `Inter, system-ui` | ✗ |
 | Title size | `type.size.lg` | `18px` | `20px` | ✗ |
 | Title weight | `type.weight.bold` | `600` | `700` | ✗ |
 | Title color | `color.text.default` | `#111827` | `#161a21` | ✗ |
 | Muted text | `color.text.muted` | `#6b7280` | `#5b6472` | ✗ |
-| Input radius | `radius.interactive` | `6px` | `8px` | ✗ |
-| Input padding | `space.inset.control` | `10px 12px` | `8px` | ✗ |
+| Interactive radius (input + button) | `radius.interactive` | `6px` | `8px` | ✗ |
+| Control padding (input + button) | `space.inset.control` | `10–12px` | `8px` | ✗ |
 | **Primary action bg** | `color.action.primary` | `#2563eb` | `#2557c7` | ✗ |
-| Primary hover | `color.action.primary-hover` | *(none)* | `#1a419c` | ✗ |
-| Button radius | `radius.interactive` | `6px` | `8px` | ✗ |
 | Destructive | `color.text.danger` | `#ef4444` | `#c92c3d` | ✗ |
 
-**15 of 15 values guessed wrong.** Not one Tailwind default happened to land on a
-Meridian token.
+**All 13 distinct tokens the card touches came out wrong.** Not one Tailwind default
+happened to land on a Meridian token.
+
+Kept honest — what that number does *not* include:
+- **† Font family:** the token value genuinely differs (`Inter` vs `-apple-system`), but
+  on a machine without Inter installed both fall back to `system-ui`, so the *rendered*
+  difference is often nil. Counted as a token miss, flagged because it may not be visible.
+- The guessed version also **omitted a hover state entirely** (`color.action.primary-hover`
+  → `#1a419c`). That's a missing state, not a wrong guess, so it's not in the 13.
+- A few incidental values *did* line up by luck — e.g. `14px` body/input text happens to
+  match `type.size.sm`. The 13 above are the tokens that came out different.
 
 ## Why the misses are invisible without tokens
 

@@ -1,15 +1,12 @@
 /**
  * SettingsCard — WITH tokensmith
  *
- * Prompt given to the model:
- *   "Build a React settings card for the 'Meridian' app (same structure as
- *    before). Use the design system via the tokensmith MCP tools — resolve
- *    every color, spacing, radius, and type value from a token; do not guess."
- *
- * Every literal below was resolved live through mcp__tokensmith__resolve_token /
- * list_tokens against the Meridian token set. The token path that produced each
- * value is named in the comment beside it. Aliases were followed to their
- * computed value (e.g. color.action.primary -> brand.primary -> base.blue-600).
+ * The same component as without.tsx, but every literal was resolved live through
+ * the tokensmith MCP tools (mcp__tokensmith__resolve_token / list_tokens) against
+ * the Meridian token set — these values are real tool output, not guesses. The
+ * token path that produced each one is named in the comment beside it, and
+ * aliases were followed to their computed value
+ * (e.g. color.action.primary -> brand.primary -> base.blue-600).
  *
  * In a real build these would compile to CSS variables; they are inlined here
  * so the demo is self-contained and every value is traceable to a token.

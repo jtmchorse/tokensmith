@@ -2,8 +2,8 @@
 
 **Make coding agents design-system-aware.** An MCP server that gives any agent
 (Claude Code, Claude Desktop, Cursor) first-class access to a design system's
-tokens — so the UI it generates comes out *on-system* and token-correct the first
-time, instead of a pile of guessed hex values.
+tokens — so the UI it writes can be *on-system* instead of a pile of guessed hex
+values.
 
 An agent writing UI today has no idea your design system exists. It reaches for
 `#2563eb` because that's the blue it remembers. tokensmith is the bridge: expose a
@@ -11,23 +11,29 @@ design system (W3C [Design Tokens / DTCG](https://tr.designtokens.org/) `tokens.
 over MCP so the agent *queries* the system — resolving `color.action.primary` to the
 real value, following alias chains — instead of inventing one.
 
+> **Scope, honestly.** tokensmith makes the design system *available* to the agent over
+> MCP; it does not yet *enforce* that the agent calls the tools or follows their output.
+> Today it removes the excuse to guess — it doesn't yet prevent guessing. Closing that
+> gap (verify generated UI actually used the tokens) is the [roadmap](#status--roadmap).
+
 ---
 
 ## The 30-second demo
 
 ![Two SettingsCard components side by side — a guessed version and a token-correct version generated from the same prompt](./demo/preview.png)
 
-*Same prompt, same layout. Left: no design system in context. Right: values resolved through tokensmith. The drift is subtle on purpose — that's exactly why it ships unnoticed. Open [`demo/preview.html`](./demo/preview.html) to view it live.*
+*Left: the values an agent reaches for with no design system in context (hand-authored to show the common Tailwind-default guesses). Right: the same component with every value resolved through tokensmith. The drift is subtle on purpose — that's exactly why it ships unnoticed. Open [`demo/preview.html`](./demo/preview.html) to view it live.*
 
-The [`demo/`](./demo/) directory builds one component, `SettingsCard`, twice:
+The [`demo/`](./demo/) directory holds one component, `SettingsCard`, two ways:
 
-- [`without.tsx`](./demo/without.tsx) — no design system in context. The model guesses
-  every value from generic Tailwind muscle memory.
-- [`with.tsx`](./demo/with.tsx) — *"use the design system via the tokensmith tools."*
-  Every literal is resolved live through the MCP server, each one citing its token path.
+- [`without.tsx`](./demo/without.tsx) — a hand-authored illustration of the values an
+  agent (or a dev working from memory) reaches for when the design system isn't in
+  context: generic Tailwind defaults. It's a worked example, not a captured model run.
+- [`with.tsx`](./demo/with.tsx) — the same component with every literal resolved live
+  through the tokensmith MCP tools, each one citing the token path it came from. These
+  values are real tool output.
 
-Same prompt, same layout. The only difference is whether the agent could **read** the
-design system. The result:
+Guessed vs. resolved, one row per distinct token the card uses:
 
 | Role | Token path | Guessed | Token-correct |
 |---|---|---|---|
@@ -36,12 +42,13 @@ design system. The result:
 | Card radius | `radius.lg` | `12px` | `16px` |
 | Muted text | `color.text.muted` | `#6b7280` | `#5b6472` |
 | Font family | `type.family.sans` | `-apple-system` | `Inter` |
-| … | | **15 / 15 guessed wrong** | |
+| … | | **all 13 tokens differ** | |
 
 Not one Tailwind default landed on a Meridian token. `#2563eb` vs `#2557c7` renders as
 "blue," passes visual review, and ships — that is exactly the drift a token system
 exists to prevent, and exactly the drift an LLM reintroduces the moment it can't read
-the tokens. Full breakdown + the alias chains in [`demo/README.md`](./demo/README.md).
+the tokens. Full breakdown, honest caveats, and the alias chains in
+[`demo/README.md`](./demo/README.md).
 
 ---
 

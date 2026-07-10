@@ -1,7 +1,7 @@
 {
   "name": "tokensmith",
-  "version": "0.0.0",
-  "description": "MCP server that makes coding agents design-system-aware. M0: walking skeleton.",
+  "version": "0.1.0",
+  "description": "MCP server that makes coding agents design-system-aware — look up tokens and audit code for off-system values.",
   "type": "module",
   "private": true,
   "bin": {

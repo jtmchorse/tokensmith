@@ -11,10 +11,11 @@ design system (W3C [Design Tokens / DTCG](https://tr.designtokens.org/) `tokens.
 over MCP so the agent *queries* the system — resolving `color.action.primary` to the
 real value, following alias chains — instead of inventing one.
 
-> **Scope, honestly.** tokensmith makes the design system *available* to the agent over
-> MCP; it does not yet *enforce* that the agent calls the tools or follows their output.
-> Today it removes the excuse to guess — it doesn't yet prevent guessing. Closing that
-> gap (verify generated UI actually used the tokens) is the [roadmap](#status--roadmap).
+> **Scope, honestly.** tokensmith makes the design system *available* to the agent
+> (`list_tokens` / `resolve_token`) **and now lets you check code against it** (`audit_css` —
+> flag the literals that should have been tokens). It still can't *force* an agent to call the
+> tools mid-generation; the loop is generate → `audit_css` → fix. Closing the last of that gap
+> (in-editor / CI enforcement, aware generation) is the [roadmap](#status--roadmap).
 
 ---
 
@@ -90,6 +91,7 @@ The token file resolves from `argv[2]`, then `TOKENS_PATH`, then the bundled
 |---|---|
 | **`list_tokens(group?)`** | Resolved listing `{path, type, value, aliasOf?, description?}`, optionally filtered by a group prefix like `"color.action"`. |
 | **`resolve_token(name)`** | Resolves one token to `{path, value, type, chain, isAlias, description}`. The `chain` is the whole point — it shows the full alias walk. |
+| **`audit_css(code, threshold?, kinds?)`** | Scan CSS / JSX for literal colors & dimensions that should be tokens. Each finding is `exact-miss` (literal equals a token value), `near-miss` (close to one — tunable `threshold`), or `no-match` (off-system, nothing close), with the nearest **semantic** token to use instead. This is the guess→verify half. |
 | **`ping`** | Health check → `pong`. |
 
 `resolve_token` follows alias chains to their terminal value and hands back the path it
@@ -105,6 +107,18 @@ That indirection is the value: a designer repoints `brand.primary` once, and eve
 consumer that asked for `action.primary` moves with it. A guessed hex is frozen at
 whatever the model remembered.
 
+And `audit_css` runs the same knowledge *backwards* — hand it code, get back every value
+that drifted off-system:
+
+```
+audit_css  "button { background: #2563eb; padding: 16px; }"
+  → near-miss  #2563eb → color.brand.primary (#2557c7, d=0.085)
+    exact-miss 16px    → space.4 (16px)
+```
+
+Pointed at the [`demo/without.tsx`](./demo/without.tsx) card it flags 16 drifted values in
+one call — the blue that "looks right" and ships, caught.
+
 ---
 
 ## How it works
@@ -117,7 +131,12 @@ whatever the model remembered.
   and mid-chain loops all caught). Unknown paths get a nearest-miss *"did you mean"* hint.
 - **MCP server** (`src/index.ts`) — registers the three tools over stdio; resolver and
   parse failures surface as MCP tool errors with the message (and hints) intact.
-- **Tested core** — `npm test` (vitest), 34 cases across loader + resolver, including
+- **Audit** (`src/audit/`) — reverse-indexes the resolved system (value → token paths),
+  scans code for literals, and ranks suggestions semantic-first (a guessed blue resolves to
+  `color.action.primary`, not the raw ramp entry it happens to sit closest to). Color
+  proximity is a normalized redmean distance, not CIEDE2000 — enough to tell shade-drift
+  from a different color.
+- **Tested core** — `npm test` (vitest), 53 cases across loader + resolver + audit, including
   every error path.
 
 The `Meridian` example is an invented, clean-room design system: 62 tokens, 21 aliases,
@@ -133,8 +152,16 @@ and composite-value references are deferred past v0.0.
 - ✅ **M0** stdio MCP pipe · ✅ **M1** DTCG loader · ✅ **M2** alias resolver + cycle guard
 - ✅ **M3** `list_tokens` + `resolve_token` · ✅ **M4** live in a Claude client + the demo
 
-**Next (`v0.1`+):** design-system-aware *generation* (not just lookup), token **audit** of
-existing code, light/dark modes, composite-value references, and round-trip to Figma.
+**`v0.1`** — guess→verify:
+
+- ✅ **`audit_css`** — flag off-system colors & dimensions in code, with the nearest
+  semantic token to use instead (exact / near / no-match; tunable color distance).
+  Colors report all three severities; dimensions report exact-miss only; scanning is
+  regex-based (hex, `rgb()`, `<n>px/rem/em`) — an AST pass and unitless-JSX-number
+  support are v0.2.
+
+**Next (`v0.2`+):** design-system-aware *generation* (not just lookup + audit), light/dark
+modes, composite-value references, AST-based scanning, and round-trip to Figma.
 
 ---
 

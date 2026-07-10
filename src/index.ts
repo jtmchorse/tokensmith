@@ -6,6 +6,7 @@ import { z } from "zod";
 import { loadTokensFile } from "./dtcg/loader.js";
 import { resolveAll, resolveToken, TokenResolveError } from "./dtcg/resolver.js";
 import { TokenParseError } from "./dtcg/types.js";
+import { auditCss } from "./audit/audit.js";
 
 // tokensmith — make coding agents design-system-aware.
 // M3: the server now serves a real design system. Token file comes from
@@ -30,7 +31,7 @@ try {
   process.exit(1);
 }
 
-const server = new McpServer({ name: "tokensmith", version: "0.0.0" });
+const server = new McpServer({ name: "tokensmith", version: "0.1.0" });
 
 /** Uniform happy-path shape: JSON text content. */
 const jsonContent = (data: unknown) => ({
@@ -129,10 +130,48 @@ server.registerTool(
   },
 );
 
+server.registerTool(
+  "audit_css",
+  {
+    title: "Audit code for off-system values",
+    description:
+      "Scan a chunk of CSS (or JSX with inline style props) for literal color and " +
+      "dimension values that SHOULD be design tokens. Returns each finding with a " +
+      "severity — exact-miss (the literal equals a token value), near-miss (it is " +
+      "close to one), or no-match (off-system, nothing close) — and the nearest " +
+      "token to use instead. This is how you VERIFY generated UI is on-system, " +
+      "not just look tokens up.",
+    inputSchema: {
+      code: z
+        .string()
+        .describe("The source to scan — CSS, or JSX with inline style props."),
+      threshold: z
+        .number()
+        .min(0)
+        .max(1)
+        .optional()
+        .describe(
+          "Near-miss color-distance cutoff, 0..1 (default 0.12). Lower = stricter.",
+        ),
+      kinds: z
+        .array(z.enum(["color", "dimension"]))
+        .optional()
+        .describe('Which literal kinds to scan. Default: both.'),
+    },
+  },
+  async ({ code, threshold, kinds }) => {
+    try {
+      return jsonContent(auditCss(set, code, { threshold, kinds }));
+    } catch (e) {
+      return errorContent(e);
+    }
+  },
+);
+
 const transport = new StdioServerTransport();
 await server.connect(transport);
 
 // stderr only — a single stdout write would corrupt the protocol stream.
 console.error(
-  `tokensmith MCP server (v0.0.0) — serving ${set.tokens.size} tokens from ${tokensPath}`,
+  `tokensmith MCP server (v0.1.0) — serving ${set.tokens.size} tokens from ${tokensPath}`,
 );

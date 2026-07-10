@@ -55,7 +55,18 @@ the tokens. Full breakdown, honest caveats, and the alias chains in
 
 ## Quickstart
 
-Requires Node 20+.
+Requires Node 20+. Published to npm as [`tokensmith-mcp`](https://www.npmjs.com/package/tokensmith-mcp)
+(the name `tokensmith` was taken by an unrelated package); the command it installs is `tokensmith`.
+
+```bash
+# Claude Code — no clone needed, runs the bundled Meridian example tokens
+claude mcp add tokensmith -s project -- npx -y tokensmith-mcp
+
+# …or with your own DTCG token file
+claude mcp add tokensmith -s project -- npx -y tokensmith-mcp /abs/path/tokens.json
+```
+
+Or clone to hack on it:
 
 ```bash
 git clone https://github.com/jtmchorse/tokensmith

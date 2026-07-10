@@ -1,19 +1,45 @@
 {
-  "name": "tokensmith",
+  "name": "tokensmith-mcp",
   "version": "0.1.0",
-  "description": "MCP server that makes coding agents design-system-aware — look up tokens and audit code for off-system values.",
+  "description": "MCP server that makes coding agents design-system-aware — look up design tokens and audit code for off-system values.",
   "type": "module",
-  "private": true,
   "bin": {
     "tokensmith": "dist/index.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "examples",
+    "README.md",
+    "LICENSE"
   ],
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "design-tokens",
+    "design-system",
+    "dtcg",
+    "design-engineering",
+    "tokens",
+    "css",
+    "claude",
+    "cursor",
+    "figma"
+  ],
+  "homepage": "https://github.com/jtmchorse/tokensmith#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jtmchorse/tokensmith.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jtmchorse/tokensmith/issues"
+  },
+  "author": "JT McHorse",
+  "license": "MIT",
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/index.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "prepublishOnly": "npm run build && npm test"
   },
   "engines": {
     "node": ">=20"

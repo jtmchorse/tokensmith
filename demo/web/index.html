@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>tokensmith — make coding agents design-system-aware</title>
+<style>
+  /* The page dogfoods Meridian: these vars ARE the example design system. */
+  :root {
+    --gray-0:#ffffff; --gray-50:#f7f8fa; --gray-100:#eceef1; --gray-300:#c6ccd4;
+    --gray-600:#5b6472; --gray-800:#2a303a; --gray-900:#161a21;
+    --brand:#2557c7; --brand-strong:#1a419c; --accent:#e8a221;
+    --danger:#c92c3d; --near:#3573e8;
+    --sans:"Inter",system-ui,sans-serif;
+    --mono:ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace;
+    --r-md:8px; --r-lg:16px;
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; background:var(--gray-900); color:var(--gray-100);
+    font-family:var(--sans); -webkit-font-smoothing:antialiased;
+    padding:40px 32px 64px;
+  }
+  .wrap { max-width:960px; margin:0 auto; }
+  h1 { font-size:32px; margin:0 0 6px; letter-spacing:-.02em; }
+  h1 .mark { color:var(--accent); }
+  .tag { color:var(--gray-300); font-size:16px; margin:0 0 40px; }
+  h2 { font-size:13px; text-transform:uppercase; letter-spacing:.08em;
+       color:var(--gray-300); margin:40px 0 16px; font-weight:600; }
+  .stage { display:flex; gap:24px; flex-wrap:wrap; }
+  .stage > figure { flex:1; min-width:280px; margin:0; }
+  figcaption { font-family:var(--mono); font-size:12px; color:var(--gray-600);
+               margin-top:10px; }
+  figcaption b { color:var(--gray-300); font-weight:600; }
+
+  /* ---- the SettingsCard, two ways ---- */
+  .card { border-radius:var(--r-lg); padding:24px; }
+  .card h3 { margin:0; font-size:20px; }
+  .card p { margin:6px 0 0; font-size:14px; }
+  .card .divider { height:1px; margin:20px 0; }
+  .card label { display:block; font-size:13px; font-weight:500; margin:0 0 6px; }
+  .card input { width:100%; padding:10px 12px; font-size:14px; }
+  .card .row { display:flex; gap:12px; margin-top:24px; align-items:center; }
+  .card button { border:0; padding:10px 16px; font-size:14px; font-weight:600;
+                 cursor:pointer; color:#fff; }
+  .card a { font-size:14px; font-weight:500; text-decoration:none; }
+
+  /* WITH tokensmith — every value from Meridian */
+  .with { background:var(--gray-50); }
+  .with h3, .with input { color:var(--gray-900); }
+  .with p { color:var(--gray-600); }
+  .with .divider { background:var(--gray-300); }
+  .with label { color:var(--gray-800); }
+  .with input { border:1px solid var(--gray-300); border-radius:var(--r-md); }
+  .with button { background:var(--brand); border-radius:var(--r-md); }
+  .with a { color:var(--danger); }
+
+  /* WITHOUT — the guessed Tailwind-ish defaults (subtly off) */
+  .without { background:#ffffff; }
+  .without h3, .without input { color:#111827; }
+  .without p { color:#6b7280; }
+  .without .divider { background:#e5e7eb; }
+  .without label { color:#374151; }
+  .without input { border:1px solid #d1d5db; border-radius:6px; }
+  .without button { background:#2563eb; border-radius:6px; }
+  .without a { color:#ef4444; }
+
+  /* ---- interactive audit ---- */
+  .audit { margin-top:16px; background:#0e1117; border:1px solid var(--gray-800);
+           border-radius:var(--r-lg); overflow:hidden; }
+  .audit .bar { display:flex; align-items:center; gap:8px; padding:12px 16px;
+                background:var(--gray-800); font-family:var(--mono); font-size:12px;
+                color:var(--gray-300); }
+  .audit .bar .dot { width:11px; height:11px; border-radius:50%; }
+  .audit .grid { display:grid; grid-template-columns:1.1fr 1fr; }
+  .audit pre { margin:0; padding:18px; font-family:var(--mono); font-size:13px;
+               line-height:1.7; color:var(--gray-100); overflow:auto;
+               border-right:1px solid var(--gray-800); white-space:pre-wrap; }
+  .audit pre .lit { border-radius:3px; padding:0 3px; }
+  .findings { padding:14px 16px; min-height:220px; }
+  .findings .empty { color:var(--gray-600); font-family:var(--mono); font-size:13px; }
+  .f { display:flex; align-items:center; gap:8px; font-family:var(--mono);
+       font-size:12.5px; padding:4px 0; opacity:0; transform:translateX(-6px);
+       animation:rise .35s ease forwards; }
+  @keyframes rise { to { opacity:1; transform:translateX(0); } }
+  .f .sw { width:13px; height:13px; border-radius:3px; border:1px solid #ffffff22;
+           flex:none; }
+  .f .arrow { color:var(--gray-600); }
+  .f .path { color:var(--gray-100); }
+  .f .chip { margin-left:auto; font-size:10.5px; padding:2px 8px; border-radius:9px; }
+  .chip.exact { color:var(--accent); background:#e8a22122; border:1px solid #e8a22155; }
+  .chip.near  { color:var(--near);  background:#3573e822; border:1px solid #3573e855; }
+  .chip.no    { color:var(--danger);background:#c92c3d22; border:1px solid #c92c3d55; }
+  .controls { display:flex; gap:12px; align-items:center; margin-top:14px; }
+  .controls button { font-family:var(--sans); font-weight:600; font-size:13px;
+                     border:0; border-radius:var(--r-md); padding:9px 16px;
+                     cursor:pointer; }
+  #run { background:var(--brand); color:#fff; }
+  #fix { background:var(--gray-800); color:var(--gray-100); }
+  .count { font-family:var(--mono); font-size:13px; color:var(--gray-300); }
+  .count b { color:var(--accent); }
+  .install { margin-top:40px; font-family:var(--mono); font-size:14px;
+             color:var(--gray-300); }
+  .install code { background:var(--gray-800); padding:4px 10px; border-radius:6px;
+                  color:var(--gray-0); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>token<span class="mark">smith</span></h1>
+  <p class="tag">Make coding agents use your design system — and catch it when they don't.</p>
+
+  <h2>Same prompt, same component — one used the design system</h2>
+  <div class="stage">
+    <figure>
+      <div class="card without" id="card-without">
+        <h3>Account</h3>
+        <p>Manage the email and security settings for your account.</p>
+        <div class="divider"></div>
+        <label>Email</label>
+        <input value="jt@meridian.app" readonly />
+        <div class="row">
+          <button>Save changes</button>
+          <a href="#">Delete account</a>
+        </div>
+      </div>
+      <figcaption><b>guessed</b> — generic Tailwind-ish defaults an agent reaches for</figcaption>
+    </figure>
+    <figure>
+      <div class="card with" id="card-with">
+        <h3>Account</h3>
+        <p>Manage the email and security settings for your account.</p>
+        <div class="divider"></div>
+        <label>Email</label>
+        <input value="jt@meridian.app" readonly />
+        <div class="row">
+          <button>Save changes</button>
+          <a href="#">Delete account</a>
+        </div>
+      </div>
+      <figcaption><b>on-system</b> — every value resolved through tokensmith</figcaption>
+    </figure>
+  </div>
+
+  <h2>How do you catch what looks right? → audit_css</h2>
+  <div class="audit">
+    <div class="bar">
+      <span class="dot" style="background:#ff5f56"></span>
+      <span class="dot" style="background:#ffbd2e"></span>
+      <span class="dot" style="background:#27c93f"></span>
+      <span style="margin-left:6px">audit_css · SaveButton.css</span>
+    </div>
+    <div class="grid">
+      <pre id="code"></pre>
+      <div class="findings" id="findings"><div class="empty">— run audit_css to scan this code —</div></div>
+    </div>
+  </div>
+  <div class="controls">
+    <button id="run">▶ Run audit_css</button>
+    <button id="fix">Fix #2563eb → token</button>
+    <span class="count" id="count"></span>
+  </div>
+
+  <p class="install">Try it: <code>npx tokensmith-mcp</code></p>
+</div>
+
+<script src="./audit.bundle.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

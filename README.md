@@ -25,6 +25,8 @@ real value, following alias chains — instead of inventing one.
 
 *A real `audit_css` run against [`demo/without.tsx`](./demo/without.tsx): every guessed literal, the nearest **semantic** token, and its severity. `#2563eb` "looks like blue," passes visual review, and ships — but `color.brand.primary` is `#2557c7`. The swatches are nearly identical on purpose; that's the drift a token system exists to prevent. Rendered from live tool output by [`demo/gen-audit-svg.mjs`](./demo/gen-audit-svg.mjs) — no hand-typed numbers.*
 
+**Walkthrough:** [`demo/audit-demo.mp4`](./demo/audit-demo.mp4) — two on-system-vs-guessed cards that look identical, then `audit_css` catches every off-system value and a live fix clears one. The [`demo/web/`](./demo/web/) page it records is a zero-backend, hostable interactive demo (it runs the real audit core in the browser).
+
 ## The 30-second demo
 
 ![Two SettingsCard components side by side — a guessed version and a token-correct version generated from the same prompt](./demo/preview.png)

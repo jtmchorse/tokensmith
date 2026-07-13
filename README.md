@@ -19,6 +19,12 @@ real value, following alias chains — instead of inventing one.
 
 ---
 
+## See it work
+
+![A live audit_css run flagging 16 off-system values in one component — 7 exact-miss, 9 near-miss — each with the token to use instead](./demo/audit.svg)
+
+*A real `audit_css` run against [`demo/without.tsx`](./demo/without.tsx): every guessed literal, the nearest **semantic** token, and its severity. `#2563eb` "looks like blue," passes visual review, and ships — but `color.brand.primary` is `#2557c7`. The swatches are nearly identical on purpose; that's the drift a token system exists to prevent. Rendered from live tool output by [`demo/gen-audit-svg.mjs`](./demo/gen-audit-svg.mjs) — no hand-typed numbers.*
+
 ## The 30-second demo
 
 ![Two SettingsCard components side by side — a guessed version and a token-correct version generated from the same prompt](./demo/preview.png)

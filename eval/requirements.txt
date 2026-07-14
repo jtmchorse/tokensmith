@@ -1,0 +1,3 @@
+# Eval harness for the tokensmith product-thesis eval.
+# Replay-backed and deterministic — no ANTHROPIC_API_KEY / [judge] extra needed.
+eval-harness @ git+https://github.com/jt-mchorse/llm-eval-harness.git
